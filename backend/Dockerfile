@@ -1,6 +1,15 @@
+FROM node:20-slim AS builder
+
+WORKDIR /app
+COPY package*.json tsconfig.json ./
+RUN npm ci
+COPY src ./src
+RUN npx tsc
+
+# ── Production image ──────────────────────────────────────────────────────────
 FROM node:20-slim
 
-# Install Chromium for Puppeteer
+# Chromium for Puppeteer
 RUN apt-get update && apt-get install -y \
     chromium \
     fonts-liberation \
@@ -24,14 +33,9 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
 WORKDIR /app
-
 COPY package*.json ./
-RUN npm ci --only=production
-
-COPY tsconfig.json ./
-COPY src ./src
-RUN npm install typescript --save-dev && npx tsc
+RUN npm ci --omit=dev
+COPY --from=builder /app/dist ./dist
 
 EXPOSE 3001
-
 CMD ["node", "dist/server.js"]
