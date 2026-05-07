@@ -78,14 +78,27 @@ async function run<T>(
   }
 }
 
+const WEATHER_INTERVAL_MS = 60 * 60 * 1000; // 60 minutes
+
+function isWeatherStale(): boolean {
+  const fetchedAt = getCache().weather?.fetchedAt;
+  if (!fetchedAt) return true;
+  return Date.now() - new Date(fetchedAt).getTime() >= WEATHER_INTERVAL_MS;
+}
+
 async function runAllScrapers(): Promise<void> {
   log('[scraper]', 'Starting full refresh...');
 
+  const weatherStale = isWeatherStale();
+  if (!weatherStale) log('[weather]  ', 'Skipped — fetched less than 60 min ago');
+
   const results = await Promise.allSettled([
-    run('weather    ', () => fetchWeather(), (w) => {
-      updateCache({ weather: w });
-      log('[weather]  ', `OK — ${w.days.length} days fetched`);
-    }),
+    weatherStale
+      ? run('weather    ', () => fetchWeather(), (w) => {
+          updateCache({ weather: w });
+          log('[weather]  ', `OK — ${w.days.length} days fetched`);
+        })
+      : Promise.resolve(true),
     run('buienradar ', () => fetchBuienradar(), () => {
       log('[buienradar]', 'OK — radar image updated');
     }),
