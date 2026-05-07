@@ -67,13 +67,13 @@ router.get('/content', (_req: Request, res: Response) => {
     });
   }
 
-  // Slide 13: Grafana (only when online) — served through local proxy for auto-auth
-  if (isOnline && process.env.GRAFANA_URL) {
+  // Slide 13: Status (only when online) — served through local proxy for auto-auth
+  if (isOnline && process.env.STATUS_URL) {
     slides.push({
-      id: 'grafana',
+      id: 'Status',
       type: 'iframe',
-      label: 'Grafana',
-      iframeUrl: '/proxy/grafana/',
+      label: 'Status',
+      iframeUrl: '/proxy/Status/',
     });
   }
 

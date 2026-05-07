@@ -16,6 +16,7 @@ export interface ManifestSlide {
   label: string;
   url: string;
   persistent?: boolean;
+  duration?: number;  // ms — overrides the default 20 s when set
 }
 
 export interface Manifest {
@@ -41,9 +42,9 @@ export function renderSlides(): void {
     slides.push({ id: 'traffic-viewer', label: 'Traffic Viewer', url: process.env.TRAFFIC_VIEWER_URL, persistent: true });
   }
 
-  // Grafana — direct iframe, requires allow_embedding = true in grafana.ini
-  if (process.env.GRAFANA_URL) {
-    slides.push({ id: 'grafana', label: 'Grafana', url: process.env.GRAFANA_URL, persistent: true });
+  // Status — direct iframe, requires allow_embedding = true in Status.ini
+  if (process.env.STATUS_URL) {
+    slides.push({ id: 'status', label: 'Status', url: process.env.STATUS_URL, persistent: true });
   }
 
   // Schuttevaer (4 rotating)
@@ -62,7 +63,7 @@ export function renderSlides(): void {
   const now = new Date();
   if (now.getHours() * 60 + now.getMinutes() >= tfH * 60 + (tfM || 0)) {
     write('traffic.html', renderTraffic(cache.traffic));
-    slides.push({ id: 'traffic', label: 'Verkeersinformatie', url: '/slides/traffic.html' });
+    slides.push({ id: 'traffic', label: 'Verkeersinformatie', url: '/slides/traffic.html', duration: 60000 });
   }
 
   // Flitsers + Spitsverwachting (after traffic, same time gate)

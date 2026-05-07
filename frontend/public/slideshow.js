@@ -46,6 +46,7 @@ function applyManifest(newSlides) {
     console.log('[slideshow] dots built');
     if (currentIndex >= slides.length) currentIndex = 0;
     showSlide(currentIndex, true);
+    resetAuto();
     console.log('[slideshow] showSlide done, hiding loading');
     document.getElementById('loading').style.display = 'none';
     console.log('[slideshow] loading hidden');
@@ -128,7 +129,8 @@ function showSlide(index, force) {
 // ── Auto-advance ───────────────────────────────────────────────────────────────
 function resetAuto() {
   clearInterval(autoTimer);
-  autoTimer = setInterval(() => advance(1), SLIDE_MS);
+  const duration = slides[currentIndex]?.duration ?? SLIDE_MS;
+  autoTimer = setTimeout(() => { advance(1); }, duration);
 }
 
 function advance(dir) {

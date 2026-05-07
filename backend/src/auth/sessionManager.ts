@@ -4,7 +4,7 @@
  * Handles both:
  *  - Direct-redirect apps (app → Keycloak → app)
  *  - Apps with an intermediate login page (app → /login → OAuth link → Keycloak → app)
- *    e.g. Grafana shows its own login page with a "Sign in with ..." button first.
+ *    e.g. Status shows its own login page with a "Sign in with ..." button first.
  */
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36';
@@ -61,7 +61,7 @@ async function doHeadlessLogin(appUrl: string): Promise<string> {
   console.log(`[session] Starting headless login for ${appUrl}`);
 
   // Step 1: GET the app — may redirect to Keycloak directly, or to an
-  //         intermediate login page (e.g. Grafana shows its own login page first).
+  //         intermediate login page (e.g. Status shows its own login page first).
   const r1 = await fetch(appUrl, {
     redirect: 'manual',
     headers: { 'User-Agent': UA, Accept: 'text/html' },
@@ -86,7 +86,7 @@ async function doHeadlessLogin(appUrl: string): Promise<string> {
     const loginHtml = await r2.text();
 
     // Look for an OAuth/Keycloak sign-in link
-    // Grafana uses href="/grafana/login/generic_oauth" or similar
+    // Status uses href="/Status/login/generic_oauth" or similar
     const oauthLink = extractOAuthLink(loginHtml, r2.url);
     if (!oauthLink) throw new Error(`[session] Could not find OAuth sign-in link at ${r2.url}`);
 
