@@ -80,6 +80,9 @@ export interface Flitser {
   to: string;
   hm?: number;
   direction: string;
+  lat?: number;
+  lon?: number;
+  distanceFromApeldoorn?: number;
 }
 
 export interface FlitsData {

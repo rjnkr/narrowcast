@@ -17,6 +17,7 @@ import { fetchNos } from './scrapers/nos';
 import { fetchTraffic } from './scrapers/traffic';
 import { fetchFlitsers } from './scrapers/flitsers';
 import { fetchSpitsverwachting } from './scrapers/spitsverwachting';
+import { fetchVerkeerplazaMap } from './scrapers/verkeerplaza';
 import { renderSlides } from './renderer';
 import apiRouter, { setOnlineStatus } from './routes/api';
 
@@ -125,6 +126,9 @@ async function runAllScrapers(): Promise<void> {
     run('spits      ', () => fetchSpitsverwachting(), (s) => {
       updateCache({ spits: s });
       log('[spits]    ', `OK — ${s?.predictions?.length ?? 0} predictions`);
+    }),
+    run('verkeerplaza', () => fetchVerkeerplazaMap(), () => {
+      log('[verkeerplaza]', 'OK — map screenshot saved');
     }),
   ]);
 

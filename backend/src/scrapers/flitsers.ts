@@ -2,6 +2,19 @@ import { FlitsData, Flitser } from '../types';
 
 const PAGE_URL = 'https://www.anwb.nl/verkeer/flitsers';
 
+const APELDOORN_LAT = 52.22;
+const APELDOORN_LON = 5.97;
+
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 async function getBuildId(): Promise<string> {
   const res = await fetch(PAGE_URL, {
     headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
@@ -47,6 +60,11 @@ export async function fetchFlitsers(): Promise<FlitsData> {
           const directionCity = seg.codeDirection === 1
             ? (seg.segment?.end || seg.to)
             : (seg.segment?.start || seg.from);
+          const lat: number | undefined = seg.lat ?? seg.latitude ?? seg.location?.lat ?? seg.coordinates?.lat;
+          const lon: number | undefined = seg.lon ?? seg.lng ?? seg.longitude ?? seg.location?.lon ?? seg.location?.lng ?? seg.coordinates?.lon;
+          const dist = (lat != null && lon != null)
+            ? parseFloat(haversineKm(APELDOORN_LAT, APELDOORN_LON, lat, lon).toFixed(1))
+            : undefined;
           flitsers.push({
             id: seg.id,
             road: seg.road,
@@ -54,12 +72,16 @@ export async function fetchFlitsers(): Promise<FlitsData> {
             to: seg.to || '',
             hm: seg.HM,
             direction: directionCity ? `richting ${directionCity}` : '',
+            lat,
+            lon,
+            distanceFromApeldoorn: dist,
           });
         }
       }
     }
   }
 
+  flitsers.sort((a, b) => (a.distanceFromApeldoorn ?? 999) - (b.distanceFromApeldoorn ?? 999));
   console.log(`[flitsers] ${flitsers.length} speed cameras fetched`);
   return { flitsers, fetchedAt: new Date().toISOString() };
 }
