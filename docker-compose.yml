@@ -2,14 +2,10 @@ version: '3.9'
 
 services:
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ${DOCKERHUB_USERNAME}/narrowcast-backend:latest
     restart: unless-stopped
-    ports:
-      - "3001:3001"
     volumes:
-      - ./cache:/app/cache
+      - cache:/app/cache
     env_file:
       - .env
     environment:
@@ -17,11 +13,9 @@ services:
       - PORT=3001
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: ${DOCKERHUB_USERNAME}/narrowcast-frontend:latest
     restart: unless-stopped
     ports:
-      - "4200:80"
+      - "80:80"
     depends_on:
       - backend
