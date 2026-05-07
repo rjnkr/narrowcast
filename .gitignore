@@ -1,7 +1,23 @@
+# ── Dependencies ──────────────────────────────────────────────────────────────
 node_modules/
+
+# ── Build output ──────────────────────────────────────────────────────────────
 dist/
+
+# ── Runtime cache (scraped data, images, slides) ──────────────────────────────
+# Root-level cache dir only — does NOT affect backend/src/cache/ source files
+/cache/
+# Guard against cache being written relative to backend/ working directory
+backend/cache/
+
+# ── Environment ───────────────────────────────────────────────────────────────
 .env
-cache/
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
 *.log
+npm-debug.log*
+
+# ── OS / IDE ──────────────────────────────────────────────────────────────────
 .DS_Store
 /.idea/
+.vscode/
