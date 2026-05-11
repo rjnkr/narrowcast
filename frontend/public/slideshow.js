@@ -20,13 +20,10 @@ updateClock();
 
 // ── Manifest ──────────────────────────────────────────────────────────────────
 async function loadManifest() {
-  console.log('[slideshow] loadManifest start');
   try {
     const res = await fetch('/slides/manifest.json', { cache: 'no-store' });
-    console.log('[slideshow] manifest response:', res.status, res.ok);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    console.log('[slideshow] manifest parsed, slides:', data.slides?.length);
     applyManifest(data.slides);
   } catch (e) {
     console.error('[slideshow] Failed to load manifest:', e);
@@ -37,19 +34,17 @@ async function loadManifest() {
 }
 
 function applyManifest(newSlides) {
-  console.log('[slideshow] applyManifest called with', newSlides?.length, 'slides');
   try {
     slides = newSlides;
     buildPersistentFrames();
-    console.log('[slideshow] persistentFrames built');
     buildDots();
-    console.log('[slideshow] dots built');
     if (currentIndex >= slides.length) currentIndex = 0;
     showSlide(currentIndex, true);
     resetAuto();
-    console.log('[slideshow] showSlide done, hiding loading');
     document.getElementById('loading').style.display = 'none';
-    console.log('[slideshow] loading hidden');
+    const persistent = slides.filter(s => s.persistent);
+    console.log(`[slideshow] manifest applied — ${slides.length} slides (${persistent.length} persistent)`);
+    persistent.forEach(s => console.log(`  [persistent] ${s.id}  ${s.label}  ${s.url}`));
   } catch (e) {
     console.error('[slideshow] applyManifest error:', e);
     const loading = document.getElementById('loading');
@@ -59,21 +54,12 @@ function applyManifest(newSlides) {
 }
 
 // ── Persistent iframes ────────────────────────────────────────────────────────
-// Created once per unique slide id — session/login state stays alive across
-// manifest reloads. Stale iframes (id no longer in manifest) are removed.
+// Created once per unique slide id and kept alive forever — the session/login
+// state inside the iframe survives manifest reloads and slide transitions.
+// Iframes that are no longer in the current manifest are simply hidden; they
+// are never destroyed so the loaded page stays ready.
 function buildPersistentFrames() {
   const main = document.getElementById('main');
-  const activeIds = new Set(slides.filter(s => s.persistent).map(s => s.id));
-
-  // Remove iframes for slides that are no longer in the manifest
-  for (const id of Object.keys(persistentFrames)) {
-    if (!activeIds.has(id)) {
-      persistentFrames[id].remove();
-      delete persistentFrames[id];
-    }
-  }
-
-  // Create iframes for new persistent slides
   slides.forEach(slide => {
     if (!slide.persistent) return;
     if (!persistentFrames[slide.id]) {
@@ -121,8 +107,22 @@ function showSlide(index, force) {
   document.getElementById('nav-next').style.display = isPersistent ? 'none' : 'block';
 
   if (isPersistent) {
-    const pFrame = persistentFrames[slide.id];
-    if (pFrame) pFrame.classList.add('active');
+    let pFrame = persistentFrames[slide.id];
+    if (!pFrame) {
+      // Shouldn't happen — create on demand as fallback
+      console.warn(`[slideshow] persistent frame missing for "${slide.id}", creating now`);
+      const main = document.getElementById('main');
+      pFrame = document.createElement('iframe');
+      pFrame.className = 'slide-frame';
+      pFrame.src = slide.url;
+      pFrame.title = slide.label;
+      pFrame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation');
+      pFrame.setAttribute('allowfullscreen', '');
+      main.appendChild(pFrame);
+      persistentFrames[slide.id] = pFrame;
+    }
+    pFrame.classList.add('active');
+    console.log(`[slideshow] showing persistent: ${slide.id}  ${slide.url}`);
   } else {
     const frame = getRegularFrame();
     // Only change src when the slide actually changes — browser cache handles re-visits
