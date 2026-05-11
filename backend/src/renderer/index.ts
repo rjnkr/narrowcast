@@ -35,6 +35,8 @@ interface SectionSlideConfig {
   from?: string;      // HH:MM — only show from this time; omit = always
 }
 
+let _sectionLoggedOnce: Record<string, boolean> = {};
+
 function parseSectionSlides(envVar: string): SectionSlideConfig[] {
   const configPath = process.env[envVar]?.trim();
   if (!configPath) return [];   // not configured — silently skip
@@ -49,7 +51,18 @@ function parseSectionSlides(envVar: string): SectionSlideConfig[] {
       console.warn(`[renderer] ${envVar}: expected a JSON array, skipping slides`);
       return [];
     }
-    return parsed.filter((s: any) => typeof s.url === 'string' && s.url);
+    const slides = parsed.filter((s: any) => typeof s.url === 'string' && s.url) as SectionSlideConfig[];
+
+    // Log the loaded slides once at startup
+    if (!_sectionLoggedOnce[envVar]) {
+      _sectionLoggedOnce[envVar] = true;
+      console.log(`[renderer] ${envVar} — ${slides.length} slide(s) loaded from ${resolved}:`);
+      slides.forEach((s, i) =>
+        console.log(`  [${i + 1}] ${s.label}  →  ${s.url}${s.from ? `  (from ${s.from})` : ''}`)
+      );
+    }
+
+    return slides;
   } catch (e) {
     console.warn(`[renderer] ${envVar}: parse error —`, (e as Error).message, '— skipping slides');
     return [];
