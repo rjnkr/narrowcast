@@ -58,17 +58,29 @@ function applyManifest(newSlides) {
   }
 }
 
-// ── Persistent iframes (Grafana, Traffic Viewer) ───────────────────────────────
-// These are created once and never reloaded — session stays alive.
+// ── Persistent iframes ────────────────────────────────────────────────────────
+// Created once per unique slide id — session/login state stays alive across
+// manifest reloads. Stale iframes (id no longer in manifest) are removed.
 function buildPersistentFrames() {
   const main = document.getElementById('main');
+  const activeIds = new Set(slides.filter(s => s.persistent).map(s => s.id));
+
+  // Remove iframes for slides that are no longer in the manifest
+  for (const id of Object.keys(persistentFrames)) {
+    if (!activeIds.has(id)) {
+      persistentFrames[id].remove();
+      delete persistentFrames[id];
+    }
+  }
+
+  // Create iframes for new persistent slides
   slides.forEach(slide => {
-    if (slide.persistent && !persistentFrames[slide.id]) {
+    if (!slide.persistent) return;
+    if (!persistentFrames[slide.id]) {
       const iframe = document.createElement('iframe');
       iframe.className = 'slide-frame';
       iframe.src = slide.url;
       iframe.title = slide.label;
-      // Allow all interactions — user needs to log in
       iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation');
       iframe.setAttribute('allowfullscreen', '');
       main.appendChild(iframe);
