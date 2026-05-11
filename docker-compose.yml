@@ -1,21 +1,18 @@
 version: '3.9'
 
 services:
-  backend:
-    image: ${DOCKERHUB_USERNAME}/narrowcast-backend:latest
+  narrowcast:
+    image: ${DOCKERHUB_USERNAME}/narrowcast:latest
     restart: unless-stopped
+    ports:
+      - "80:3001"
     volumes:
       - cache:/app/cache
     env_file:
       - .env
     environment:
       - CACHE_DIR=/app/cache
-      - PORT=3001
+      - FRONTEND_DIR=/app/public
 
-  frontend:
-    image: ${DOCKERHUB_USERNAME}/narrowcast-frontend:latest
-    restart: unless-stopped
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
+volumes:
+  cache:

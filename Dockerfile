@@ -1,3 +1,4 @@
+# ── Build stage ───────────────────────────────────────────────────────────────
 FROM node:20-slim AS builder
 
 WORKDIR /app
@@ -6,7 +7,7 @@ RUN npm ci
 COPY src ./src
 RUN npx tsc
 
-# ── Production image ──────────────────────────────────────────────────────────
+# ── Production stage ──────────────────────────────────────────────────────────
 FROM node:20-slim
 
 # Chromium for Puppeteer
@@ -36,6 +37,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
+COPY public ./public
 
 EXPOSE 3001
 CMD ["node", "dist/server.js"]

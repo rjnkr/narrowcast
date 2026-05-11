@@ -35,7 +35,8 @@ interface SectionSlideConfig {
   from?: string;      // HH:MM — only show from this time; omit = always
 }
 
-let _sectionLoggedOnce: Record<string, boolean> = {};
+// Log each config file once at startup
+const _loggedOnce: Record<string, boolean> = {};
 
 function parseSectionSlides(envVar: string): SectionSlideConfig[] {
   const configPath = process.env[envVar]?.trim();
@@ -53,10 +54,9 @@ function parseSectionSlides(envVar: string): SectionSlideConfig[] {
     }
     const slides = parsed.filter((s: any) => typeof s.url === 'string' && s.url) as SectionSlideConfig[];
 
-    // Log the loaded slides once at startup
-    if (!_sectionLoggedOnce[envVar]) {
-      _sectionLoggedOnce[envVar] = true;
-      console.log(`[renderer] ${envVar} — ${slides.length} slide(s) loaded from ${resolved}:`);
+    if (!_loggedOnce[envVar]) {
+      _loggedOnce[envVar] = true;
+      console.log(`[renderer] ${envVar} — ${slides.length} slide(s):`);
       slides.forEach((s, i) =>
         console.log(`  [${i + 1}] ${s.label}  →  ${s.url}${s.from ? `  (from ${s.from})` : ''}`)
       );

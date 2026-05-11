@@ -1,8 +1,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
-// Load .env from project root (one level above backend/)
-dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
-dotenv.config(); // also try backend/.env as local override
+dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import cron from 'node-cron';
@@ -24,6 +22,7 @@ import apiRouter, { setOnlineStatus } from './routes/api';
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const CACHE_DIR = process.env.CACHE_DIR || './cache';
+const FRONTEND_DIR = process.env.FRONTEND_DIR || path.resolve('./public');
 
 app.use(cors());
 app.use(express.json());
@@ -40,6 +39,13 @@ app.use('/slides', (req, res, next) => {
 }, express.static(path.resolve(CACHE_DIR, 'slides')));
 
 app.use('/api', apiRouter);
+
+// Serve frontend static files — must come after API and cache routes
+app.use(express.static(FRONTEND_DIR));
+// SPA fallback: any unknown path returns index.html
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(FRONTEND_DIR, 'index.html'));
+});
 
 function ts(): string {
   return new Date().toLocaleTimeString('nl-NL', { hour12: false });
