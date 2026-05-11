@@ -67,7 +67,6 @@ function buildPersistentFrames() {
       iframe.className = 'slide-frame';
       iframe.src = slide.url;
       iframe.title = slide.label;
-      iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation');
       iframe.setAttribute('allowfullscreen', '');
       main.appendChild(iframe);
       persistentFrames[slide.id] = iframe;
@@ -116,7 +115,6 @@ function showSlide(index, force) {
       pFrame.className = 'slide-frame';
       pFrame.src = slide.url;
       pFrame.title = slide.label;
-      pFrame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation');
       pFrame.setAttribute('allowfullscreen', '');
       main.appendChild(pFrame);
       persistentFrames[slide.id] = pFrame;
