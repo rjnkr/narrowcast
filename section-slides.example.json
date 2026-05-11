@@ -1,0 +1,12 @@
+[
+  {
+    "url": "https://example.com/dashboard",
+    "label": "Dashboard"
+  },
+  {
+    "url": "https://example.com/status",
+    "label": "Status",
+    "duration": 30000,
+    "from": "08:00"
+  }
+]

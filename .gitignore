@@ -12,6 +12,10 @@ backend/cache/
 
 # ── Environment ───────────────────────────────────────────────────────────────
 .env
+section1-slides.json
+section2-slides.json
+applications.json
+notes.json
 
 # ── Logs ──────────────────────────────────────────────────────────────────────
 *.log
@@ -21,3 +25,4 @@ npm-debug.log*
 .DS_Store
 /.idea/
 .vscode/
+/pipdrive.json

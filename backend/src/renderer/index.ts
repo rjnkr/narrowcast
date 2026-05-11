@@ -7,7 +7,6 @@ import { renderBuienradar } from './buienradar';
 import { renderNews } from './news';
 import { renderTraffic } from './traffic';
 import { renderFlitsers } from './flitsers';
-import { renderPlaceholder } from './placeholder';
 
 const SLIDES_DIR = path.resolve(process.env.CACHE_DIR || './cache', 'slides');
 
@@ -29,6 +28,57 @@ function write(filename: string, html: string): void {
   fs.writeFileSync(path.join(SLIDES_DIR, filename), html, 'utf8');
 }
 
+interface SectionSlideConfig {
+  url: string;
+  label: string;
+  duration?: number;  // ms, default 20 000
+  from?: string;      // HH:MM — only show from this time; omit = always
+}
+
+function parseSectionSlides(envVar: string): SectionSlideConfig[] {
+  const configPath = process.env[envVar]?.trim();
+  if (!configPath) return [];   // not configured — silently skip
+  const resolved = path.resolve(configPath);
+  if (!fs.existsSync(resolved)) {
+    console.warn(`[renderer] ${envVar}: file not found — ${resolved}, skipping slides`);
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(fs.readFileSync(resolved, 'utf8'));
+    if (!Array.isArray(parsed)) {
+      console.warn(`[renderer] ${envVar}: expected a JSON array, skipping slides`);
+      return [];
+    }
+    return parsed.filter((s: any) => typeof s.url === 'string' && s.url);
+  } catch (e) {
+    console.warn(`[renderer] ${envVar}: parse error —`, (e as Error).message, '— skipping slides');
+    return [];
+  }
+}
+
+function minuteOfDay(hhmm: string): number {
+  const [h, m] = hhmm.split(':').map(Number);
+  return h * 60 + (m || 0);
+}
+
+function addSectionSlides(
+  slides: ManifestSlide[],
+  configs: SectionSlideConfig[],
+  prefix: string,
+  nowMinutes: number,
+): void {
+  configs.forEach((cfg, i) => {
+    if (cfg.from && nowMinutes < minuteOfDay(cfg.from)) return;
+    slides.push({
+      id: `${prefix}-${i}`,
+      label: cfg.label,
+      url: cfg.url,
+      persistent: true,
+      ...(cfg.duration ? { duration: cfg.duration } : {}),
+    });
+  });
+}
+
 export function renderSlides(): void {
   if (!fs.existsSync(SLIDES_DIR)) {
     fs.mkdirSync(SLIDES_DIR, { recursive: true });
@@ -36,16 +86,11 @@ export function renderSlides(): void {
 
   const cache = getCache();
   const slides: ManifestSlide[] = [];
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
-  // Traffic Viewer — direct iframe, no framing restrictions
-  if (process.env.TRAFFIC_VIEWER_URL) {
-    slides.push({ id: 'traffic-viewer', label: 'Traffic Viewer', url: process.env.TRAFFIC_VIEWER_URL, persistent: true });
-  }
-
-  // Status — direct iframe, requires allow_embedding = true in Status.ini
-  if (process.env.STATUS_URL) {
-    slides.push({ id: 'status', label: 'Status', url: process.env.STATUS_URL, persistent: true });
-  }
+  // ── Section 1 (e.g. Traffic Viewer, Status) ──────────────────────────────────
+  addSectionSlides(slides, parseSectionSlides('SLIDES_SECTION1_CONFIG'), 'section1', nowMinutes);
 
   // Schuttevaer (4 rotating)
   const svIndices = getSlice('schuttevaer', cache.schuttevaer.length, 4);
@@ -59,15 +104,13 @@ export function renderSlides(): void {
 
   // Traffic (time-gated)
   const trafficFrom = process.env.TRAFFIC_FROM ?? '15:30';
-  const [tfH, tfM] = trafficFrom.split(':').map(Number);
-  const now = new Date();
-  if (now.getHours() * 60 + now.getMinutes() >= tfH * 60 + (tfM || 0)) {
+  if (nowMinutes >= minuteOfDay(trafficFrom)) {
     write('traffic.html', renderTraffic(cache.traffic));
     slides.push({ id: 'traffic', label: 'Verkeersinformatie', url: '/slides/traffic.html', duration: 60000 });
   }
 
   // Flitsers + Spitsverwachting (after traffic, same time gate)
-  if (now.getHours() * 60 + now.getMinutes() >= tfH * 60 + (tfM || 0)) {
+  if (nowMinutes >= minuteOfDay(trafficFrom)) {
     write('flitsers.html', renderFlitsers(cache.flitsers, cache.spits));
     slides.push({ id: 'flitsers', label: 'Flitsers & Spitsverwachting', url: '/slides/flitsers.html' });
   }
@@ -90,16 +133,8 @@ export function renderSlides(): void {
     }
   });
 
-  // Pipedrive placeholders
-  const placeholders: [string, string][] = [
-    ['Deals overzicht', '💼'],
-    ['Activiteiten',    '📅'],
-    ['Pipeline status', '📊'],
-  ];
-  placeholders.forEach(([title, icon], i) => {
-    write(`pipedrive-${i}.html`, renderPlaceholder(title, icon));
-    slides.push({ id: `pipedrive-${i}`, label: 'Pipedrive CRM', url: `/slides/pipedrive-${i}.html` });
-  });
+  // ── Section 2 (e.g. Pipedrive, internal dashboards) ──────────────────────────
+  addSectionSlides(slides, parseSectionSlides('SLIDES_SECTION2_CONFIG'), 'section2', nowMinutes);
 
   // BNR — 3 most recent articles (no rotation, always freshest)
   cache.bnr.slice(0, 3).forEach((a, i) => {
