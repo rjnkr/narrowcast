@@ -7,6 +7,8 @@ import { renderBuienradar } from './buienradar';
 import { renderNews } from './news';
 import { renderTraffic } from './traffic';
 import { renderFlitsers } from './flitsers';
+import { renderMsg } from './msg';
+import { hasMsgScreenshot } from '../scrapers/msg';
 
 const SLIDES_DIR = path.resolve(process.env.CACHE_DIR || './cache', 'slides');
 
@@ -104,6 +106,12 @@ export function renderSlides(): void {
 
   // ── Section 1 (e.g. Traffic Viewer, Status) ──────────────────────────────────
   addSectionSlides(slides, parseSectionSlides('SLIDES_SECTION1_CONFIG'), 'section1', nowMinutes);
+
+  // ── MSG — Puppeteer screenshot of authenticated tracker page ─────────────────
+  if (process.env.MSG_URL && hasMsgScreenshot()) {
+    write('msg.html', renderMsg());
+    slides.push({ id: 'msg', label: 'MSG', url: '/slides/msg.html', duration: 20000 });
+  }
 
   // Schuttevaer (4 rotating)
   const svIndices = getSlice('schuttevaer', cache.schuttevaer.length, 4);

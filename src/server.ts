@@ -16,6 +16,7 @@ import { fetchTraffic } from './scrapers/traffic';
 import { fetchFlitsers } from './scrapers/flitsers';
 import { fetchSpitsverwachting } from './scrapers/spitsverwachting';
 import { fetchVerkeerplazaMap } from './scrapers/verkeerplaza';
+import { fetchMsg } from './scrapers/msg';
 import { renderSlides } from './renderer';
 import apiRouter, { setOnlineStatus } from './routes/api';
 
@@ -136,6 +137,11 @@ async function runAllScrapers(): Promise<void> {
     run('verkeerplaza', () => fetchVerkeerplazaMap(), () => {
       log('[verkeerplaza]', 'OK — map screenshot saved');
     }),
+    ...(process.env.MSG_URL ? [
+      run('msg        ', () => fetchMsg(), () => {
+        log('[msg]      ', 'OK — screenshot saved');
+      }),
+    ] : []),
   ]);
 
   const failed = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && r.value === false)).length;
